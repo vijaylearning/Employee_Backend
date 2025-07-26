@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+    tools {
+        maven 'Maven_3'
+    }
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('employee-docker-token')
+        IMAGE_NAME = "vijaylearning/employee-backend"
+		 TAG = "${new Date().format('yyyyMMddHHmmss')}"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/vijaylearning/Employee_Backend.git',
+                    credentialsId: 'employee-github-token'
+            }
+        }
+        stage('Build with Maven') {
+            steps {
+                bat 'mvn clean package -DskipTests'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                bat """
+                docker build -t %IMAGE_NAME%:%TAG% -f docker/Dockerfile .
+                """
+            }
+        }
+        stage('Login to Docker') {
+            steps {
+                bat """
+                echo %DOCKERHUB_CREDENTIALS_PSW% | docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin
+                """
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                bat """
+                docker push %IMAGE_NAME%:%TAG%
+                """
+            }
+        }
+		stage('Show Tag') {
+            steps {
+                echo "✅ Docker image pushed as ${IMAGE_NAME}:${TAG}"
+            }
+        }
+    }
+}
