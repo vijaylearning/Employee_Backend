@@ -1,5 +1,5 @@
 # End-to-End Spring Boot + PostgreSQL CI/CD with Kubernetes  
-**Authors:** Vijeyender Ravi  
+**Author:** Vijeyender Ravi  
 
 ---
 
