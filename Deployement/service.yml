@@ -5,7 +5,7 @@ metadata:
   labels:
     app: employee-backend
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: employee-backend
   ports:
