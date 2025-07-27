@@ -1,4 +1,4 @@
-**detailed technical document** authored by *Karthick Pitchaimari* and *Vijeyender Ravi*, covering:
+**detailed technical document** authored by  *Vijeyender Ravi*, covering:
 
 ✅ Spring Boot + PostgreSQL setup
 ✅ Docker image creation
