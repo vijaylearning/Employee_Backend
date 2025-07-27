@@ -1,3 +1,5 @@
+**detailed technical document** authored by *Karthick Pitchaimari* and *Vijeyender Ravi*, covering:
+
 ✅ Spring Boot + PostgreSQL setup
 ✅ Docker image creation
 ✅ Jenkins CI/CD pipeline
