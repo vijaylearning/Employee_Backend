@@ -125,4 +125,123 @@ kubectl logs -n ingress-nginx <controller-pod>
 Verify service connectivity:
 
 kubectl exec -it <any-pod> -- curl http://employee-backend-service:80/swagger-ui/index.html
-👉 Next: Do you want me to generate this document as a proper formatted PDF/Markdown file with all YAMLs included and diagrams (flow of Jenkins → Docker → Kubernetes → Service → Pod)? Or keep it as a plain text document?
+
+
+When you have multiple services (for example: employee-backend, customer-backend, order-backend), you configure one ingress resource with multiple rules or multiple paths.
+
+✅ Option 1: Use Different Hostnames for Each Service
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: multi-service-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: employee.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: employee-backend-service
+                port:
+                  number: 80
+    - host: customer.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: customer-backend-service
+                port:
+                  number: 80
+    - host: order.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: order-backend-service
+                port:
+                  number: 80
+👉 Access:
+
+http://employee.local
+http://customer.local
+http://order.local
+📌 Manual: Add all to /etc/hosts:
+
+127.0.0.1 employee.local customer.local order.local
+✅ Option 2: Use One Hostname with Different Paths
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: multi-service-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.local
+      http:
+        paths:
+          - path: /employee
+            pathType: Prefix
+            backend:
+              service:
+                name: employee-backend-service
+                port:
+                  number: 80
+          - path: /customer
+            pathType: Prefix
+            backend:
+              service:
+                name: customer-backend-service
+                port:
+                  number: 80
+          - path: /order
+            pathType: Prefix
+            backend:
+              service:
+                name: order-backend-service
+                port:
+                  number: 80
+👉 Access:
+
+http://api.local/employee
+http://api.local/customer
+http://api.local/order
+📌 Manual: Add api.local to /etc/hosts.
+
+✅ Option 3: Use Regex & Rewrite for Clean URLs
+If you want / to go to employee, /customer to customer, etc.:
+
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+    - host: api.local
+      http:
+        paths:
+          - path: /employee(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: employee-backend-service
+                port:
+                  number: 80
+          - path: /customer(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: customer-backend-service
+                port:
+                  number: 80
+👉 /employee/swagger-ui/index.html will go to employee backend properly.
+
+📌 When to use which?
+Different domains (microservices) → Option 1 (Host-based routing)
+Single domain API Gateway → Option 2 or 3 (Path-based routing)
+
