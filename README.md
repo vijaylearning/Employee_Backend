@@ -10,7 +10,7 @@
 
 ## 📄 **Document: End-to-End Spring Boot + PostgreSQL CI/CD with Kubernetes**
 
-### ✍️ Author: *Karthick Pitchaimari & Vijeyender Ravi*
+### ✍️ Author: *Karthick Pitchaimari & Vijeyender Ravi *
 
 ---
 
