@@ -464,14 +464,172 @@ https://app.mydomain.com
 
 ---
 
-Would you like me to **make this a proper step-by-step PDF document with screenshots** (so it’s easy to share with your team)?
+---
 
-Also — **are you using Azure AKS (Kubernetes)** or just a **VM/standalone app**? (I can tweak the guide accordingly if it’s AKS + Ingress.)
+# **Securing Your AKS App with TLS/HTTPS (NGINX Ingress)**
 
-Which one do you want?
+We’ll use **NGINX Ingress** + **Let’s Encrypt (cert-manager)** for automatic certificate management.
 
-1. **Quick one-pager (PDF)**
-2. **Detailed with screenshots**
-3. **For AKS with Ingress**
+---
+
+## **Step 1: Prerequisites**
+
+* An **AKS cluster** with a **public IP** for the Ingress.
+* A **domain name** pointing to that public IP (via an A record or CNAME).
+* **kubectl** & **Helm** configured for your cluster.
+* An existing **Ingress** for your application (without HTTPS yet).
+
+---
+
+## **Step 2: Install NGINX Ingress (if not already installed)**
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm install nginx-ingress ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace \
+  --set controller.ingressClassResource.name=nginx \
+  --set controller.service.loadBalancerIP=<YOUR_PUBLIC_IP>
+```
+
+> **Replace `<YOUR_PUBLIC_IP>`** with the static IP you reserved for this Ingress.
+
+---
+
+## **Step 3: Install cert-manager (for TLS Certificates)**
+
+```bash
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+kubectl create namespace cert-manager
+
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --set installCRDs=true
+```
+
+---
+
+## **Step 4: Configure ClusterIssuer for Let’s Encrypt**
+
+Create a **ClusterIssuer** (this requests certificates from Let’s Encrypt).
+
+```yaml
+# cluster-issuer.yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v2.api.letsencrypt.org/directory
+    email: your-email@example.com    # <-- replace with your email
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+```
+
+Apply it:
+
+```bash
+kubectl apply -f cluster-issuer.yaml
+```
+
+---
+
+## **Step 5: Update Your Ingress to Use TLS**
+
+Modify your Ingress to include TLS:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - app.mydomain.com         # <-- your domain
+    secretName: my-app-tls     # <-- cert will be stored here
+  rules:
+  - host: app.mydomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-app-service
+            port:
+              number: 80
+```
+
+Apply it:
+
+```bash
+kubectl apply -f my-app-ingress.yaml
+```
+
+---
+
+## **Step 6: Verify the Certificate**
+
+Check if cert-manager issued the certificate:
+
+```bash
+kubectl get certificate -A
+```
+
+You should see:
+
+```
+NAME          READY   SECRET        AGE
+my-app-tls    True    my-app-tls    1m
+```
+
+---
+
+## **Step 7: Test**
+
+Open your browser:
+
+```
+https://app.mydomain.com
+```
+
+You should now see a **valid Let’s Encrypt SSL certificate**.
+
+---
+
+### **Key Notes**
+
+* Certificates **auto-renew** before expiry.
+* For **staging/testing**, use Let’s Encrypt **staging** server to avoid rate limits:
+
+  ```
+  server: https://acme-staging-v02.api.letsencrypt.org/directory
+  ```
+
+---
+
+### **What’s Next?**
+
+* **Force HTTPS**: Add `nginx.ingress.kubernetes.io/force-ssl-redirect: "true"` annotation.
+* **Custom Certificates**: If you have your own certs, you can manually create a TLS secret instead of using cert-manager.
+* **Wildcard Domains**: Use DNS-01 challenge instead of HTTP-01 for `*.domain.com` certificates.
+
+---
+
+
 
 
