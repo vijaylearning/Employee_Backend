@@ -365,3 +365,113 @@ spec:
 
 ---
 
+---
+
+# **Configuring a DNS Name for a Public IP in Azure**
+
+## **Prerequisites**
+
+* You already have:
+
+  * An Azure subscription.
+  * A **Public IP Address** resource in Azure (used by your application service/load balancer/ingress).
+* Access to the **Azure Portal** or **Azure CLI**.
+
+---
+
+## **Step 1: Find Your Public IP Resource**
+
+1. Go to **Azure Portal** → **All Resources**.
+2. Search for your **Public IP Address** resource (the one used by your application).
+3. Click on it to open its settings.
+
+---
+
+## **Step 2: Configure DNS Name**
+
+1. In the **Public IP Address** blade:
+
+   * Under **Settings**, select **Configuration**.
+2. In the **DNS Name Label** field:
+
+   * Enter a unique name, e.g., `myapp-demo`.
+3. Select **Save**.
+
+> **Important:** The DNS name label must be unique within the Azure region.
+> For example:
+> If your region is East US and your label is `myapp-demo`, your full DNS will be:
+
+```
+myapp-demo.eastus.cloudapp.azure.com
+```
+
+---
+
+## **Step 3: Verify the DNS**
+
+1. Open a browser and visit:
+
+   ```
+   http://<your-dns-name>.<region>.cloudapp.azure.com
+   ```
+2. Example:
+
+   ```
+   http://myapp-demo.eastus.cloudapp.azure.com
+   ```
+3. You should now see your application loading.
+
+---
+
+## **Optional: Map to a Custom Domain (e.g., `app.mydomain.com`)**
+
+If you have your own domain, you can map it to this Azure DNS:
+
+1. Go to your **Domain Registrar** (GoDaddy, Namecheap, etc.).
+2. Create a **CNAME record**:
+
+   * **Host:** `app` (or whatever subdomain you want)
+   * **Value:** `<your-dns-label>.<region>.cloudapp.azure.com`
+   * Example: `myapp-demo.eastus.cloudapp.azure.com`
+3. Save the DNS settings.
+
+Now you can access your app at `http://app.mydomain.com`.
+
+---
+
+## **Step 4 (Optional): Use HTTPS**
+
+To secure with HTTPS:
+
+* Use **Azure Application Gateway** or **NGINX Ingress Controller** (if on AKS).
+* Get an SSL certificate (free via Let's Encrypt or from your domain provider).
+
+---
+
+### **Final URL**
+
+Your application will now be accessible at:
+
+```
+http://myapp-demo.eastus.cloudapp.azure.com
+```
+
+Or your custom domain:
+
+```
+https://app.mydomain.com
+```
+
+---
+
+Would you like me to **make this a proper step-by-step PDF document with screenshots** (so it’s easy to share with your team)?
+
+Also — **are you using Azure AKS (Kubernetes)** or just a **VM/standalone app**? (I can tweak the guide accordingly if it’s AKS + Ingress.)
+
+Which one do you want?
+
+1. **Quick one-pager (PDF)**
+2. **Detailed with screenshots**
+3. **For AKS with Ingress**
+
+
