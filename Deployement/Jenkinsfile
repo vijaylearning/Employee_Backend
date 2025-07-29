@@ -5,6 +5,7 @@ pipeline {
     }
     environment {
         DOCKERHUB_CREDENTIALS = credentials('employee-docker-token')
+        ACR_LOGIN = 'vijayregistryacr.azurecr.io'
         IMAGE_NAME = "vijaylearning/employee-backend"
 		 TAG = "${new Date().format('yyyyMMddHHmmss')}"
     }
@@ -42,6 +43,30 @@ pipeline {
                 """
             }
         }
+
+        stage('Login to ACR') {
+                   steps {
+                       withCredentials([usernamePassword(credentialsId: 'vijayazurregistry-token', usernameVariable: 'ACR_USERNAME', passwordVariable: 'ACR_PASSWORD')]) {
+
+                               bat """
+                               echo $ACR_PASSWORD | docker login $ACR_LOGIN -u $ACR_USERNAME --password-stdin"
+                               echo ✅ ACR logged in successfully
+                                """
+
+                       }
+                   }
+               }
+        stage('Push to ACR') {
+                  steps {
+                      script {
+                      bat """
+
+                      docker tag %IMAGE_NAME%:%TAG% vijayregistryacr.azurecr.io/%IMAGE_NAME%:%TAG%
+                          docker push $ACR_LOGIN/%IMAGE_NAME%:%TAG%
+                          """
+                      }
+                  }
+              }
 		stage('Show Tag') {
             steps {
                 echo "✅ Docker image pushed as ${IMAGE_NAME}:${TAG}"
