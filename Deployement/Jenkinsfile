@@ -36,13 +36,7 @@ pipeline {
                 """
             }
         }
-        stage('Push Docker Image') {
-            steps {
-                bat """
-                docker push %IMAGE_NAME%:%TAG%
-                """
-            }
-        }
+
 
         stage('Login to ACR') {
                    steps {
