@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: employee-backend
-          image: vijayregistryacr.azurecr.io/vijaylearning/employee-backend:20250729235046  # Change if using Docker Hub/Harbor
+          image: IMAGE_PLACEHOLDER
           ports:
             - containerPort: 8080
