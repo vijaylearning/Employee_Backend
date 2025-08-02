@@ -90,7 +90,7 @@ pipeline {
                 kubectl apply -f Deployement/service.yml
                 kubectl apply -f Deployement/postgresdb-deployment.yml
                 kubectl apply -f Deployement/postgresdb-PersistentVolumeClaim.yml
-                kubectl apply -f docker/kubeconfig/SecretProviderClass.yml
+                kubectl apply -f Deployement/SecretProviderClass.yml
 
 
                 kubectl rollout status deployment/employee-backend
