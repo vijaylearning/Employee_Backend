@@ -19,7 +19,10 @@ spec:
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_PASSWORD
-              value: max
+              valueFrom:
+                secretKeyRef:
+                  name: db-password-k8s
+                  key: POSTGRESPASSWORD
             - name: POSTGRES_DB
               value: employee
             - name: PGDATA
@@ -33,3 +36,9 @@ spec:
         - name: postgres-storage
           persistentVolumeClaim:
             claimName: postgres-pvc
+        - name: secrets-store                 # ✅ CSI volume for Azure Key Vault
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kv-secrets"
