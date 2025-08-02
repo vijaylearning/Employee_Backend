@@ -69,7 +69,9 @@ pipeline {
                 withCredentials([file(credentialsId: 'aks-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                     bat """
                     mkdir %WORKSPACE%\\kube
+                    echo %KUBECONFIG_PATH%
                     copy %KUBECONFIG_FILE% %KUBECONFIG_PATH%
+                    echo %KUBECONFIG_FILE%
                     set KUBECONFIG=%KUBECONFIG_PATH%
                     kubectl config get-contexts
                     echo ✅ Connected to AKS
