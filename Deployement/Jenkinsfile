@@ -8,7 +8,7 @@ pipeline {
         TAG = "${new Date().format('yyyyMMddHHmmss')}"
         ACR_LOGIN = "vijayregistryacr.azurecr.io"
         FULL_IMAGE = "${ACR_LOGIN}/${IMAGE_NAME}:${TAG}"
-        KUBECONFIG_PATH = "${WORKSPACE}\\kubeconfig.yml"
+        KUBECONFIG_PATH = "${WORKSPACE}\\config.yml"
     }
 
     stages {
