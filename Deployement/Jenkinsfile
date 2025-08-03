@@ -93,8 +93,6 @@ pipeline {
                 kubectl apply -f Deployement/postgresdb-PersistentVolumeClaim.yml
                 kubectl apply -f Deployement/SecretProviderClass.yml
                 kubectl apply -f Deployement/EmployeeHorizontalPodAutoscaler.yml
-
-
                 kubectl rollout status deployment/employee-backend
                 echo ✅ Deployment updated with image %FULL_IMAGE%
                 """
