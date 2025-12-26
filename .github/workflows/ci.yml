@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize, reopened]
     branches: [ 'master' ]
   workflow_dispatch:
 
@@ -12,6 +12,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Ensure Maven wrapper is executable
+        run: chmod +x mvnw
 
       - name: Set up JDK 17 and cache Maven
         uses: actions/setup-java@v4
@@ -23,4 +29,18 @@ jobs:
       - name: Build (skip tests)
         env:
           MAVEN_OPTS: -Xmx2g
-        run: mvn -B -DskipTests=true clean package
+        run: ./mvnw -B -DskipTests=true clean package
+
+      - name: SonarCloud Scan (PR analysis)
+        if: github.event_name == 'pull_request'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./mvnw -B sonar:sonar \
+            -Dsonar.projectKey=vijaylearning_Employee_Backend \
+            -Dsonar.organization=vijaylearning \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ env.SONAR_TOKEN }} \
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
+            -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
