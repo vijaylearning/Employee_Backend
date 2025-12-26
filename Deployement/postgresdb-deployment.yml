@@ -19,15 +19,29 @@ spec:
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_PASSWORD
-              value: max
+              valueFrom:
+                secretKeyRef:
+                  name: db-password-k8s
+                  key: POSTGRESPASSWORD
             - name: POSTGRES_DB
               value: employee
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           ports:
             - containerPort: 5432
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
               name: postgres-storage
+            - mountPath: "/mnt/secrets"       # ✅ Mount Key Vault secret files
+              name: secrets-store
+              readOnly: true
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
             claimName: postgres-pvc
+        - name: secrets-store                 # ✅ CSI volume for Azure Key Vault
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kv-secrets"

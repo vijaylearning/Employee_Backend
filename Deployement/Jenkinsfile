@@ -4,47 +4,98 @@ pipeline {
         maven 'Maven_3'
     }
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('employee-docker-token')
         IMAGE_NAME = "vijaylearning/employee-backend"
-		 TAG = "${new Date().format('yyyyMMddHHmmss')}"
+        TAG = "${new Date().format('yyyyMMddHHmmss')}"
+        ACR_LOGIN = "vijayregistryacr.azurecr.io"
+        FULL_IMAGE = "${ACR_LOGIN}/${IMAGE_NAME}:${TAG}"
+        KUBECONFIG_PATH = "${WORKSPACE}\\config.yml"
     }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master',
+                cleanWs()
+                git branch: 'Azure-deployment',
                     url: 'https://github.com/vijaylearning/Employee_Backend.git',
                     credentialsId: 'employee-github-token'
             }
         }
+
         stage('Build with Maven') {
             steps {
                 bat 'mvn clean package -DskipTests'
             }
         }
+
         stage('Build Docker Image') {
             steps {
+                bat "docker build -t %IMAGE_NAME%:%TAG% -f Deployement/Dockerfile ."
+            }
+        }
+
+        stage('Login to ACR') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'vijayazurregistry-token', usernameVariable: 'ACR_USERNAME', passwordVariable: 'ACR_PASSWORD')]) {
+                    bat """
+                    echo %ACR_PASSWORD% | docker login %ACR_LOGIN% -u %ACR_USERNAME% --password-stdin
+                    echo ✅ ACR login successful
+                    """
+                }
+            }
+        }
+
+        stage('Push to ACR') {
+            steps {
                 bat """
-                docker build -t %IMAGE_NAME%:%TAG% -f Deployement/Dockerfile .
+                docker tag %IMAGE_NAME%:%TAG% %FULL_IMAGE%
+                docker push %FULL_IMAGE%
                 """
             }
         }
-        stage('Login to Docker') {
+
+        stage('Update Deployment YAML') {
             steps {
-                bat """
-                echo %DOCKERHUB_CREDENTIALS_PSW% | docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin
-                """
+                script {
+                    // Replace image placeholder in deployment YAML
+                    bat """
+                    powershell -Command "(Get-Content Deployement/Deployment.yml) -replace 'IMAGE_PLACEHOLDER', '%FULL_IMAGE%' | Set-Content Deployement/deployment-updated.yaml"
+                    """
+                }
             }
         }
-        stage('Push Docker Image') {
+
+        stage('Login to AKS') {
             steps {
-                bat """
-                docker push %IMAGE_NAME%:%TAG%
-                """
+                withCredentials([file(credentialsId: 'aks-kubeconfig', variable: 'KUBECONFIG_FILE')]) {
+                    bat """
+                    mkdir %WORKSPACE%\\kube
+                    echo %KUBECONFIG_PATH%
+                    copy %KUBECONFIG_FILE% %KUBECONFIG_PATH%
+                    echo %KUBECONFIG_FILE%
+                    set KUBECONFIG=%KUBECONFIG_PATH%
+                    kubectl config get-contexts
+                    echo ✅ Connected to AKS
+                    """
+                }
             }
         }
-		stage('Show Tag') {
+
+        stage('Deploy to AKS') {
             steps {
-                echo "✅ Docker image pushed as ${IMAGE_NAME}:${TAG}"
+                bat """
+                set KUBECONFIG=%KUBECONFIG_PATH%
+
+                kubectl apply -f Deployement/deployment-updated.yaml
+                kubectl apply -f Deployement/ingress.yml
+                kubectl apply -f Deployement/service.yml
+                kubectl apply -f Deployement/postgresdb-deployment.yml
+                kubectl apply -f Deployement/postgresdb-service.yml
+                kubectl apply -f Deployement/postgresdb-PersistentVolumeClaim.yml
+                kubectl apply -f Deployement/SecretProviderClass.yml
+                kubectl apply -f Deployement/EmployeeHorizontalPodAutoscaler.yml
+                kubectl rollout status deployment/employee-backend
+                echo ✅ Deployment updated with image %FULL_IMAGE%
+                """
             }
         }
     }

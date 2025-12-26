@@ -14,6 +14,29 @@ spec:
     spec:
       containers:
         - name: employee-backend
-          image: vijaylearning/employee-backend:20250726232304  # Change if using Docker Hub/Harbor
+          image: IMAGE_PLACEHOLDER
           ports:
             - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-username-k8s
+                  key: DB-USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-password-k8s
+                  key: DB-PASSWORD
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-url-k8s
+                  key: DB-URL
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kv-secrets"
