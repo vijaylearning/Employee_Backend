@@ -7,6 +7,36 @@ on:
   workflow_dispatch:
 
 jobs:
+  secrets-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show environment and secrets presence
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "GITHUB_EVENT_NAME=${{ github.event_name }}"
+          echo "GITHUB_REF=$GITHUB_REF"
+          echo "GITHUB_HEAD_REF=${{ github.head_ref }}"
+          echo "GITHUB_BASE_REF=${{ github.base_ref }}"
+
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is set"
+            echo "SONAR_TOKEN length: ${#SONAR_TOKEN} (value is masked)"
+          else
+            echo "SONAR_TOKEN is NOT set"
+          fi
+
+          if [ -n "$GITHUB_TOKEN" ]; then
+            echo "GITHUB_TOKEN is set"
+          else
+            echo "GITHUB_TOKEN is NOT set"
+          fi
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -31,16 +61,12 @@ jobs:
           MAVEN_OPTS: -Xmx2g
         run: ./mvnw -B -DskipTests=true clean package
 
-      - name: SonarCloud Scan (PR analysis)
-        if: github.event_name == 'pull_request'
+      - name: SonarCloud Scan (use SonarCloud GitHub Action)
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        uses: SonarSource/sonarcloud-github-action@v1
+        with:
+          organization: "vijaylearning"
+          projectKey: "vijaylearning_Employee_Backend"
+          token: ${{ secrets.SONAR_TOKEN }}
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          ./mvnw -B sonar:sonar \
-            -Dsonar.projectKey=vijaylearning_Employee_Backend \
-            -Dsonar.organization=vijaylearning \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=${{ env.SONAR_TOKEN }} \
-            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
-            -Dsonar.pullrequest.branch=${{ github.head_ref }} \
-            -Dsonar.pullrequest.base=${{ github.base_ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
