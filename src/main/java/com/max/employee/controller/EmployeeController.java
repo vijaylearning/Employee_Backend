@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -22,7 +23,13 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     public Employee getById(@PathVariable Long id) {
-        return service.getById(id).orElse(null);
+        // Intentional bug #1: using Optional.get() without checking isPresent() - unsafe
+        Optional<Employee> maybe = service.getById(id);
+        Employee unsafe = maybe.get(); // will throw if empty
+        // use the retrieved object so the variable isn't unused
+        String name = unsafe.getName();
+
+        return unsafe;
     }
 
     @PostMapping
@@ -38,6 +45,11 @@ public class EmployeeController {
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
-        service.delete(id);
+        // Intentional bug #2: empty catch block swallowing exceptions
+        try {
+            service.delete(id);
+        } catch (Exception e) {
+            // swallowed intentionally to trigger static analysis warning
+        }
     }
 }
