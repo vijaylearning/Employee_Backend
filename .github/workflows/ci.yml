@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ 'master' ]
+  workflow_dispatch:
+
+jobs:
+  secrets-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show environment and secrets presence
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "GITHUB_EVENT_NAME=${{ github.event_name }}"
+          echo "GITHUB_REF=$GITHUB_REF"
+          echo "GITHUB_HEAD_REF=${{ github.head_ref }}"
+          echo "GITHUB_BASE_REF=${{ github.base_ref }}"
+
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is set"
+            echo "SONAR_TOKEN length: ${#SONAR_TOKEN} (value is masked)"
+          else
+            echo "SONAR_TOKEN is NOT set"
+            echo "Failing the job because SONAR_TOKEN is required for Sonar analysis."
+            exit 1
+          fi
+
+          if [ -n "$GITHUB_TOKEN" ]; then
+            echo "GITHUB_TOKEN is set"
+          else
+            echo "GITHUB_TOKEN is NOT set"
+          fi
+
+  build:
+    needs: secrets-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Ensure Maven wrapper is executable
+        run: chmod +x mvnw
+
+      - name: Set up JDK 17 and cache Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Build (skip tests)
+        env:
+          MAVEN_OPTS: -Xmx2g
+        run: ./mvnw -B -DskipTests=true clean package
+
+      - name: SonarCloud Scan (use Sonar Maven plugin)
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          echo "Running Sonar Maven scanner (explicit plugin coordinate)"
+          ./mvnw -B org.sonarsource.scanner.maven:sonar-maven-plugin:3.9.1.2184:sonar \
+            -Dsonar.login=${{ env.SONAR_TOKEN }} \
+            -Dsonar.projectKey=vijaylearning_Employee_Backend \
+            -Dsonar.organization=vijaylearning \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
+            -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
