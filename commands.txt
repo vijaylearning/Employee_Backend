@@ -1,0 +1,51 @@
+    1  docker --version
+    2  git --version
+    3  git clone https://github.com/vijaylearning/Employee_backend.git
+    4  cd Employee_backend/
+    5  ls
+    6  ./mvnw clean package -dskipTests
+    7  mvn -version
+    8  chmod +X mvnw
+    9  ls -l mvnw
+   10  mvn -version
+   11  mvn --version
+   12  bash mvnw clean package -DskipTests
+   13  ls
+   14  mvn -version
+   15  sed -i 's/\r$//' mvnw
+   16  chmod +x mvnw
+   17* 
+   18  chmod +X mvnw
+   19  mvn -version
+   20  mvn --version
+   21  pwd
+   22  ls
+   23  docker pull maven:3.9.6-eclipse-temurin-17
+   24  docker run --rm   -v "$(pwd)":/usr/src/app   -w /usr/src/app   maven:3.9.6-eclipse-temurin-17   mvn clean package -DskipTests
+   25  sl
+   26  ls
+   27  cd src
+   28  ls
+   29  cd main
+   30  ls
+   31  cd ..
+   32  cd ..
+   33  cd ..
+   34  ls
+   35  cd Employee_backend/
+   36  ls
+   37  cd target/
+   38  ls
+   39  java -jar target/employee-0.0.1-SNAPSHOT.jar
+   40  docker run --rm   -v "$(pwd)":/usr/src/app   -w /usr/src/app   maven:3.9.6-eclipse-temurin-17   mvn spring-boot:build-image
+   41  cd ..
+   42  docker run --rm   -v "$(pwd)":/usr/src/app   -w /usr/src/app   maven:3.9.6-eclipse-temurin-17   mvn spring-boot:build-image
+   43  docker run --rm   -v "$(pwd)":/usr/src/app   -w /usr/src/app   maven:3.9.6-eclipse-temurin-17   mvn spring-boot:build-image -DskipTests
+   44  ls
+   45  docker run --rm   -v "$(pwd)":/usr/src/app   -w /usr/src/app   maven:3.9.6-eclipse-temurin-17 mvn -DskipTests   org.springframework.boot:spring-boot-maven-plugin:build-image
+   46  docker run --rm   -v "$(pwd)":/usr/src/app   -w /usr/src/app   maven:3.9.6-eclipse-temurin-17 mvn -DskipTests -U  org.springframework.boot:spring-boot-maven-plugin:build-image
+   47  docker run --rm   -v "$PWD":/workspace   -v /var/run/docker.sock:/var/run/docker.sock   -w /workspace   maven:3.9.9-eclipse-temurin-17   mvn -DskipTests org.springframework.boot:spring-boot-maven-plugin:build-image
+   48  docker images
+   49  docker run -p 8080:8080 employee:0.0.1-SNAPSHOT
+   50  history
+   51  history > commands.txt
