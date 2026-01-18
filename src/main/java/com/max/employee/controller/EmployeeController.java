@@ -1,11 +1,20 @@
 package com.max.employee.controller;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.max.employee.model.Employee;
 import com.max.employee.service.EmployeeService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -22,7 +31,13 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     public Employee getById(@PathVariable Long id) {
-        return service.getById(id).orElse(null);
+        // Intentional bug #1: using Optional.get() without checking isPresent() - unsafe
+        Optional<Employee> maybe = service.getById(id);
+        Employee unsafe = maybe.get(); // will throw if empty
+        // use the retrieved object so the variable isn't unused
+        String name = unsafe.getName();
+
+        return unsafe;
     }
 
     @PostMapping
@@ -38,6 +53,11 @@ public class EmployeeController {
 
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
-        service.delete(id);
+        // Intentional bug #2: empty catch block swallowing exceptions
+        try {
+            service.delete(id);
+        } catch (Exception e) {
+            // swallowed intentionally to trigger static analysis warning
+        }
     }
 }
